@@ -40,7 +40,7 @@ Update URL
 ###Add IOS Push Notification and Android FCM Notification
 
 - **1** Download Script from following PHP Script File
-  - https://github.com/ines-wallon/Nagios-Status-JSON/blob/master/ServerAlarmNotify.php
+  - https://github.com/wallon-ines/Nagios-Status-JSON/blob/master/ServerAlarmNotify.php
   
 - **2** Upload File to Nagios's Plugin Folder**
 ```javascript
