@@ -93,5 +93,23 @@ define contact{
 - **7** If your GROUP API KEY is not showing
   - Update URL 
   - Turn OFF and ON Notification.
-  
-For support contact support@serveralarms.com
+#Step 6
+###Add htaccess auth in apache server
+- **1** Edit /etc/httpd/conf.d/10-centreon.conf and add 
+```javascript
+<Location "/centreon/json/">
+        AuthName "Centreon Mon"
+        AuthType Basic
+        AuthUserFile "/etc/httpd/conf.d/htpasswd/htpasswd"
+        Require valid-user
+</Location>
+```
+- **2** Genetate user and password
+```bash
+mkdir /etc/httpd/conf.d/htpasswd/
+htpasswd -c /etc/httpd/conf.d/htpasswd/htpasswd myuser
+```
+- **3** Reload httpd server
+```bash
+service httpd reload
+```
