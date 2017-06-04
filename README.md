@@ -26,7 +26,7 @@ Change status.dat file's path according to your Centreon Server configuration.
 
 Go to settings
 
-![Settings](https://github.com/ines-wallon/Nagios-Status-JSON/blob/master/SettingPage-A-I.png)
+![Settings](https://github.com/wallon-ines/Nagios-Status-JSON/blob/master/SettingPage-A-I.png)
 
 Update URL
 ###Nagios Core
@@ -34,7 +34,7 @@ Update URL
 
 
 
-![URL Update](https://github.com/ines-wallon/Nagios-Status-JSON/blob/master/URLUpdatePage-A-I.png)
+![URL Update](https://github.com/wallon-ines/Nagios-Status-JSON/blob/master/URLUpdatePage-A-I.png)
 
 #Step 5
 ###Add IOS Push Notification and Android FCM Notification
@@ -54,7 +54,7 @@ Update URL
 - **4** Add two command in Configuration  >  Commands  >  Notifications
   
 - **4** Edit **commands.cfg** and add following two commands. You will find your under settings. Menu -> Setting.
-![Settings](https://github.com/ines-wallon/Nagios-Status-JSON/blob/master/services-command.png)
+![Settings](https://github.com/wallon-ines/Nagios-Status-JSON/blob/master/services-command.png)
 ```javascript
 # 'sm-host-push-notify' command definition
 define command{
@@ -71,7 +71,7 @@ define command{
 ```
 #
 - **5** Edit Users and add **sm-service-push-notify** as service notification command and **sm-host-push-notify** as host notification command.
-![Settings](https://github.com/ines-wallon/Nagios-Status-JSON/blob/master/user.png)
+![Settings](https://github.com/wallon-ines/Nagios-Status-JSON/blob/master/user.png)
    -
 ```javascript
 define contact{
