@@ -24,17 +24,21 @@
 // |                                                                      |
 // +----------------------------------------------------------------------+
 // HTTP authentication 
-
-$tag = $_GET["tag"];
+//**********Change Me*************
+// ****** Change Status.dat file's locaiton
+$statusFile = '/var/log/centreon-engine/status.dat';
+// Centreon Url
+$centreonUrl="https://my-centreon-server-url.com/";
+//*******************************
+$tag = isset($_GET["tag"]);
 
 if($tag =="login"){	
-	$response = array("URL" => $url_nagios);
+	$response = array("URL" => $centreonUrl);
 	$response["Tag"] = $tag;
 	$response["success"] = "1";
         echo json_encode($response);
 }else{
 	// ****** Change Status.dat file's locaiton
-	$statusFile = '/usr/local/nagios/var/status.dat';
 	$nag_version = getFileVersion($statusFile);
 	$created_ts = 0;
 	$debug = false;
@@ -43,7 +47,7 @@ if($tag =="login"){
 	} else if ($nag_version == 3) {
 		$data = getData3($statusFile);
 	} else {
-		$data = getData2($statusFile);
+		$data = getData3($statusFile);
 	}
 	$hosts = $data['hosts'];
 	$services = $data['services'];
