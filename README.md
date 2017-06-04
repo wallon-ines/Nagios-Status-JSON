@@ -17,6 +17,7 @@ Change status.dat file's path according to your Centreon Server configuration.
 
 **$statusFile = '/var/log/centreon-engine/status.dat';**
 
+
 **$centreonUrl="https://my-centreon-server-url.com/";**
 
 
