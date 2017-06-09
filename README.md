@@ -97,6 +97,7 @@ define contact{
   - Turn OFF and ON Notification.
   
 #Step 6
+
 ###Add htaccess auth in apache server
 
 - **1** Edit /etc/httpd/conf.d/10-centreon.conf and add 
