@@ -94,3 +94,5 @@ define contact{
 - **7** If your GROUP API KEY is not showing
   - Update URL 
   - Turn OFF and ON Notification.
+#TODO
+- Add ldap auth
