@@ -25,25 +25,17 @@
 // +----------------------------------------------------------------------+
 // HTTP authentication 
 
-$tag = $_GET["tag"];
-   
+$tag = isset($_GET["tag"]);
+include('config.php');
+
 if($tag =="login"){
- 
+        $url_nagios="";
 	$response = array("URL" => $url_nagios);
 	$response["Tag"] = $tag;
 	$response["success"] = "1";
         echo json_encode($response);
 }else{
-	// ****** Change Status.dat file's locaiton
-	$statusFile = '/var/www/status.dat';
-        
-        // Start centreon config
-        $isCentreon = true;
-        $db_server = "my-db-server.com";
-        $db_name = "centreon";
-        $db_user= "username";
-        $db_password = "password";
-        // end centreon config
+// end centreon config
         
 	$nag_version = getFileVersion($statusFile);
 	$created_ts = 0;
