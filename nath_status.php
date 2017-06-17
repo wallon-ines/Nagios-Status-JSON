@@ -24,38 +24,83 @@
 // |                                                                      |
 // +----------------------------------------------------------------------+
 // HTTP authentication 
-//**********Change Me*************
-// ****** Change Status.dat file's locaiton
-$statusFile = '/var/log/centreon-engine/status.dat';
-// Centreon Url
-$centreonUrl="https://my-centreon-server-url.com/";
-//*******************************
-$tag = isset($_GET["tag"]);
 
-if($tag =="login"){	
-	$response = array("URL" => $centreonUrl);
+$tag = $_GET["tag"];
+   
+if($tag =="login"){
+ 
+	$response = array("URL" => $url_nagios);
 	$response["Tag"] = $tag;
 	$response["success"] = "1";
         echo json_encode($response);
 }else{
 	// ****** Change Status.dat file's locaiton
+	$statusFile = '/var/www/status.dat';
+        
+        // Start centreon config
+        $isCentreon = true;
+        $db_server = "my-db-server.com";
+        $db_name = "centreon";
+        $db_user= "username";
+        $db_password = "password";
+        // end centreon config
+        
 	$nag_version = getFileVersion($statusFile);
 	$created_ts = 0;
 	$debug = false;
+        
 	if ($nag_version == 4) {
 		$data = getData4($statusFile);
 	} else if ($nag_version == 3) {
 		$data = getData3($statusFile);
+	} else if ($isCentreon == true) {
+                getAuth();
+		$data = getDataCentreon($statusFile);
 	} else {
-		$data = getData3($statusFile);
-	}
-	$hosts = $data['hosts'];
-	$services = $data['services'];
+                $data = getData2($statusFile);
+        }
+        
+            $hosts = $data['hosts'];
+            $services = $data['services'];
+
 	$program = "";
 	if (array_key_exists("program", $data)) {
 		$program = $data['program'];
 	}
+              
 	outputJson($hosts, $services, $program);
+}
+
+function authPrompt() {
+    header('WWW-Authenticate: Basic realm="Centreon Login"');
+    header("HTTP/1.0 401 Unauthorized");
+    exit;
+} 
+
+/*
+ * Basic Auth from Centreon database
+ */    
+function getAuth() {
+    global $db_server;
+    global $db_name;
+    global $db_user;
+    global $db_password;
+    
+    $db = new PDO('mysql:host='.$db_server.';dbname='.$db_name.';charset=utf8', $db_user, $db_password, array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION));
+    
+    $req=$db->query("SELECT contact_alias, contact_passwd FROM contact WHERE contact_alias='".$_SERVER['PHP_AUTH_USER']."'");
+    $contact=$req->fetch(PDO::FETCH_OBJ);
+
+    if ( !isset($_SERVER['PHP_AUTH_USER']) ) {
+        authPrompt();
+    }
+    else {
+        if ( $_SERVER['PHP_AUTH_USER'] != $contact->contact_alias && $_SERVER['PHP_AUTH_PW'] != md5($contact->contact_passwd) ) {
+            authPrompt();
+            exit;
+        }
+    }
+    return true;
 }
 
 function outputJson($hosts, $services, $program){
@@ -298,6 +343,7 @@ function getData3($statusFile)
         {
             if ($sectionType == "servicestatus") {
                 $serviceStatus[$sectionData['host_name']][$sectionData['service_description']] = $sectionData;
+                
             } elseif ($sectionType == "hoststatus") {
                 $hostStatus[$sectionData["host_name"]] = $sectionData;
             } elseif ($sectionType == "programstatus") {
@@ -317,6 +363,7 @@ function getData3($statusFile)
                     echo "LINE " . $lineNum . ": lineKey=" . $lineKey . "= lineVal=" . $lineVal . "=\n";
                 }
                 $sectionData[$lineKey] = $lineVal;
+                
             }
             // else continue on, ignore this section, don't save anything
         }
@@ -329,6 +376,115 @@ function getData3($statusFile)
     return $retArray;
 }
 
+
+// parse nagios3 status.dat
+function getDataCentreon($statusFile)
+{
+    global $debug;
+    global $db_server;
+    global $db_name;
+    global $db_user;
+    global $db_password;
+    # open the file
+    $fh = fopen($statusFile, 'r');
+
+    # variables to keep state
+    $inSection = false;
+    $sectionType = "";
+    $lineNum = 0;
+    $sectionData = array();
+
+    $hostStatus = array();
+    $serviceStatus = array();
+    $programStatus = array();
+
+    #variables for total hosts and services
+    $typeTotals = array();
+    $username=$_SERVER['PHP_AUTH_USER'];
+    $db = new PDO('mysql:host='.$db_server.';dbname='.$db_name.';charset=utf8', $db_user, $db_password, array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION));
+    
+    $req=$db->query("SELECT contact.contact_alias, service.service_id, service.service_description , host.host_name
+        FROM ((((contact_service_relation 
+        INNER JOIN contact ON contact_service_relation.contact_id = contact.contact_id) 
+        INNER JOIN service ON contact_service_relation.service_service_id = service.service_id)
+        INNER JOIN host_service_relation ON contact_service_relation.service_service_id = host_service_relation.service_service_id)
+        INNER JOIN host ON host_service_relation.host_host_id = host.host_id) 
+        WHERE contact_alias='$username'");
+
+    while($services=$req->fetch(PDO::FETCH_OBJ)) {
+        $testservice[]=$services->service_description;
+        $testhost[]=$services->host_name;
+    }
+
+    # loop through the file
+    while ($line = fgets($fh)) {
+          
+        $lineNum++; // increment counter of line number, mainly for debugging
+        $line = trim($line); // strip whitespace
+        if ($line == "") {
+            continue;
+        } // ignore blank line
+        if (substr($line, 0, 1) == "#") {
+            continue;
+        } // ignore comment
+        // ok, now we need to deal with the sections
+        if (!$inSection) {
+            // we're not currently in a section, but are looking to start one
+            if (substr($line, strlen($line) - 1, 1) == "{") // space and ending with {, so it's a section header
+            {
+                $sectionType = substr($line, 0, strpos($line, " ")); // first word on line is type
+                $inSection = true;
+                // we're now in a section
+                $sectionData = array();
+
+                // increment the counter for this sectionType
+                if (isset($typeTotals[$sectionType])) {
+                    $typeTotals[$sectionType] = $typeTotals[$sectionType] + 1;
+                } else {
+                    $typeTotals[$sectionType] = 1;
+                }
+
+            }
+        } elseif ($inSection && trim($line) == "}") // closing a section
+        {
+            if ($sectionType == "servicestatus") {
+                if( in_array($sectionData['service_description'], $testservice) &&  in_array($sectionData['host_name'], $testhost) ) { 
+                    $serviceStatus[$sectionData['host_name']][$sectionData['service_description']] = $sectionData;
+                }
+                   
+            } elseif ($sectionType == "hoststatus") {
+                if( in_array($sectionData['host_name'], $testhost) ) {
+                    $hostStatus[$sectionData['host_name']] = $sectionData;
+                }
+            } elseif ($sectionType == "programstatus") {
+                $programStatus = $sectionData;
+            }
+            $inSection = false;
+            $sectionType = "";
+            continue;
+        } else {
+            // we're currently in a section, and this line is part of it
+            $lineKey = substr($line, 0, strpos($line, "="));
+            $lineVal = substr($line, strpos($line, "=") + 1);
+
+            // add to the array as appropriate
+            if ($sectionType == "servicestatus" || $sectionType == "hoststatus" || $sectionType == "programstatus") {
+                if ($debug) {
+                    echo "LINE " . $lineNum . ": lineKey=" . $lineKey . "= lineVal=" . $lineVal . "=\n";
+                }
+                $sectionData[$lineKey] = $lineVal;
+                
+            }
+            // else continue on, ignore this section, don't save anything
+        }
+
+    }
+
+    fclose($fh);
+
+    $retArray = array("hosts" => $hostStatus, "services" => $serviceStatus, "program" => $programStatus);
+    return $retArray;
+}
 
 // parse nagios4 status.dat
 function getData4($statusFile)
