@@ -4,21 +4,20 @@ Centreon Status JSON
 This PHP API script reads Centreon status.dat file and return the JSON result. This API is desinged for Nagios Client unofficial Nagios status monitoring app.
 
 # Step 1
-Create directory (/usr/share/centreon/www/json) and Upload **nath_status.php** to your Centreon web root folder.
+Create directory (/usr/share/centreon/www/json) and Upload **nath_status.php** and config.dist.php to your Centreon web root folder.
 ###Centreon CES Server default Web Root folder Web Root Folder - Centos
 **/usr/share/centreon/www/json**
 
 # Step 2
-Edit **nath_status.php.** *You can use your favourite text editor*
+Rename config.dist.php to config.php and edit **config.php** *You can use your favourite text editor*
 
-vi /usr/share/centreon/www/json/nath_status.php  
+vi /usr/share/centreon/www/json/config.php  
 
 Change status.dat file's path according to your Centreon Server configuration.
 
 **$statusFile = '/var/log/centreon-engine/status.dat';**
 
-
-**$centreonUrl="https://my-centreon-server-url.com/";**
+Configure database if use Centreon Server and set true in $isCentreon variable
 
 
 # Step 3
@@ -95,26 +94,3 @@ define contact{
 - **7** If your GROUP API KEY is not showing
   - Update URL 
   - Turn OFF and ON Notification.
-  
-#Step 6
-
-###Add htaccess auth in apache server
-
-- **1** Edit /etc/httpd/conf.d/10-centreon.conf and add 
-```javascript
-<Location "/centreon/json/">
-        AuthName "Centreon Mon"
-        AuthType Basic
-        AuthUserFile "/etc/httpd/conf.d/htpasswd/htpasswd"
-        Require valid-user
-</Location>
-```
-- **2** Genetate user and password
-```bash
-gmkdir /etc/httpd/conf.d/htpasswd/
-htpasswd -c /etc/httpd/conf.d/htpasswd/htpasswd myuser
-```
-- **3** Reload httpd server
-```bash
-service httpd reload
-```
